@@ -14,7 +14,6 @@ import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { InteractionManager } from 'react-native';
 
 interface PhotoTag {
   id: string;
@@ -50,7 +49,6 @@ export default function App() {
   const [subtitle, setSubtitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedList, setSelectedList] = useState<string>('');
-  const [renderKey, setRenderKey] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -63,9 +61,7 @@ export default function App() {
   }, []);
 
   const handleMapPress = () => {
-    setRenderKey((prevKey) => prevKey + 1);
     setShowConfirmPrompt(true);
-
   };
 
   const openImagePicker = async () => {
@@ -82,9 +78,8 @@ export default function App() {
     };
 
   const confirmTagLocation = async () => {
-
-    await openImagePicker();
-
+    setShowConfirmPrompt(false);
+    openImagePicker();
   };
 
   const cancelTagLocation = () => {
@@ -140,7 +135,6 @@ export default function App() {
     setSelectedImages([]);
     setSelectedLocation(null);
     setShowTagModal(false);
-    setShowConfirmPrompt(false);
   };
 
   return (
@@ -157,10 +151,8 @@ export default function App() {
           // Check if the event has a coordinate (i.e., clicked on the map, not a marker)
           if (!event.nativeEvent.action) {
             setSelectedLocation(event.nativeEvent.coordinate);
-            InteractionManager.runAfterInteractions(() => {
-              setShowConfirmPrompt(true);
-            });
-          };
+            handleMapPress();
+          }
         }}
       >
         {photoTags.map((tag) => (
@@ -181,7 +173,6 @@ export default function App() {
         {/* Temporary Marker */}
         {selectedLocation && (
           <Marker
-            key={`marker-${renderKey}`}  // Forces re-render when key changes
             coordinate={selectedLocation}
             pinColor="blue"
             title="New Tag"
@@ -199,8 +190,8 @@ export default function App() {
               />
             </View>
       {/* Confirmation Prompt */}
-      {showConfirmPrompt && (
-        <View style={[styles.confirmPrompt, { position: 'absolute', zIndex: 10 }]}>
+      <Modal visible={showConfirmPrompt} style={styles.confirmPromptModal} transparent={true}>
+        <View  style={styles.confirmPrompt}>
           <TouchableOpacity style={styles.confirmButton} onPress={confirmTagLocation}>
             <Text style={styles.confirmButtonText}>Confirm Tag</Text>
           </TouchableOpacity>
@@ -208,8 +199,7 @@ export default function App() {
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
         </View>
-      )}
-
+      </Modal>
 
 
 
@@ -315,8 +305,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listButton: {
-    top: 110,
-    right: 20,
+    top: 120,
+    left: 20,
   },
   cameraButton: {
     bottom: 30,

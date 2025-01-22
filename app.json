@@ -13,7 +13,13 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs access to the camera to take photos for location tags.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select images for location tags.",
+        "NSLocationWhenInUseUsageDescription": "This app needs access to location to place tags on the map.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs access to location to place tags on the map when using the camera."
+      }
     },
     "android": {
       "adaptiveIcon": {

@@ -14,7 +14,7 @@ import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { InteractionManager } from 'react-native';
+
 
 interface PhotoTag {
   id: string;
@@ -37,7 +37,6 @@ export default function App() {
   const [photoTags, setPhotoTags] = useState<PhotoTag[]>([]);
   const [lists, setLists] = useState<List[]>([]);
   const [showTagModal, setShowTagModal] = useState(false);
-  const [showConfirmPrompt, setShowConfirmPrompt] = useState(false);
   const [showListModal, setShowListModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -50,7 +49,6 @@ export default function App() {
   const [subtitle, setSubtitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedList, setSelectedList] = useState<string>('');
-  const [renderKey, setRenderKey] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -62,55 +60,44 @@ export default function App() {
     })();
   }, []);
 
-  const handleMapPress = () => {
-    setRenderKey((prevKey) => prevKey + 1);
-    setShowConfirmPrompt(true);
-
+  const handleMapPress = (event: any) => {
+    setSelectedLocation(event.nativeEvent.coordinate);
+    openImagePicker();
   };
 
   const openImagePicker = async () => {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsMultipleSelection: true,
-        quality: 1,
-      });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 1,
+    });
 
-      if (!result.canceled) {
-        setSelectedImages(result.assets.map((asset) => asset.uri));
-        setShowTagModal(true);
-      }
-    };
-
-  const confirmTagLocation = async () => {
-
-    await openImagePicker();
-
+    if (!result.canceled) {
+      setSelectedImages(result.assets.map((asset) => asset.uri));
+      setShowTagModal(true);
+    }
   };
 
-  const cancelTagLocation = () => {
-    setSelectedLocation(null);
-    setShowConfirmPrompt(false);
-  };
   const handleCameraCapture = async () => {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission required', 'Please allow access to your camera.');
-        return;
-      }
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Please allow access to your camera.');
+      return;
+    }
 
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        quality: 1,
-      });
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      quality: 1,
+    });
 
-      if (!result.canceled) {
-        const { coords } = await Location.getCurrentPositionAsync({});
-        const { latitude: currentLat, longitude: currentLon } = coords;
-        setSelectedLocation({ latitude: currentLat, longitude: currentLon });
-        setSelectedImages([result.assets[0].uri]);
-        setShowTagModal(true);
-      }
-    };
+    if (!result.canceled) {
+      const { coords } = await Location.getCurrentPositionAsync({});
+      const { latitude: currentLat, longitude: currentLon } = coords;
+      setSelectedLocation({ latitude: currentLat, longitude: currentLon });
+      setSelectedImages([result.assets[0].uri]);
+      setShowTagModal(true);
+    }
+  };
 
   const createNewTag = () => {
     if (selectedLocation && title && selectedList) {
@@ -140,78 +127,62 @@ export default function App() {
     setSelectedImages([]);
     setSelectedLocation(null);
     setShowTagModal(false);
-    setShowConfirmPrompt(false);
+  };
+
+  const createNewList = () => {
+    if (title.trim()) {
+      const newList: List = {
+        id: Date.now().toString(),
+        name: title.trim(),
+      };
+      setLists([...lists, newList]);
+      setShowListModal(false);
+    }
   };
 
   return (
     <View style={styles.container}>
       <MapView
-        style={{ flex: 1 }}
-        initialRegion={{
-          latitude: location?.coords.latitude || -32.993008,
-          longitude: location?.coords.longitude || -68.868907,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        }}
-        onPress={(event) => {
-          // Check if the event has a coordinate (i.e., clicked on the map, not a marker)
-          if (!event.nativeEvent.action) {
-            setSelectedLocation(event.nativeEvent.coordinate);
-            InteractionManager.runAfterInteractions(() => {
-              setShowConfirmPrompt(true);
-            });
-          };
-        }}
-      >
-        {photoTags.map((tag) => (
-          <Marker
-            key={tag.id}
-            coordinate={{
-              latitude: tag.latitude,
-              longitude: tag.longitude,
-            }}
-            title={tag.title}
-            description={tag.description}
-            onPress={(e) => {
-              e.stopPropagation(); // Prevent map onPress from triggering
-            }}
-          />
-        ))}
-
-        {/* Temporary Marker */}
-        {selectedLocation && (
-          <Marker
-            key={`marker-${renderKey}`}  // Forces re-render when key changes
-            coordinate={selectedLocation}
-            pinColor="blue"
-            title="New Tag"
-          />
-        )}
-      </MapView>
+      style={{ flex: 1 }}
+      initialRegion={{
+        latitude: location?.coords.latitude || -32.993008,
+        longitude: location?.coords.longitude || -68.868907,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      }}
+      onPress={(event) => {
+        // Check if the event has a coordinate (i.e., clicked on the map, not a marker)
+        if (!event.nativeEvent.action) {
+          setSelectedLocation(event.nativeEvent.coordinate);
+          openImagePicker();
+        }
+      }}
+    >
+      {photoTags.map((tag) => (
+        <Marker
+          key={tag.id}
+          coordinate={{
+            latitude: tag.latitude,
+            longitude: tag.longitude,
+          }}
+          title={tag.title}
+          description={tag.description}
+          onPress={(e) => {
+            e.stopPropagation();  // Prevent map onPress from triggering
+          }}
+        />
+      ))}
+    </MapView>
 
       {/* Search Bar */}
-            <View style={styles.searchBar}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search location..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-            </View>
-      {/* Confirmation Prompt */}
-      {showConfirmPrompt && (
-        <View style={[styles.confirmPrompt, { position: 'absolute', zIndex: 10 }]}>
-          <TouchableOpacity style={styles.confirmButton} onPress={confirmTagLocation}>
-            <Text style={styles.confirmButtonText}>Confirm Tag</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tagCancelButton} onPress={cancelTagLocation}>
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-
-
+      <View style={styles.searchBar}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search location..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
 
       {/* Control Buttons */}
       <TouchableOpacity style={[styles.button, styles.listButton]} onPress={() => setShowListModal(true)}>
@@ -223,7 +194,12 @@ export default function App() {
       </TouchableOpacity>
 
       {/* Tag Creation Modal */}
-      <Modal visible={showTagModal} animationType="slide" transparent={true}>
+      <Modal
+        visible={showTagModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowTagModal(false)}
+      >
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Create New Tag</Text>
@@ -253,43 +229,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  confirmPrompt: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 20,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    elevation: 5,
-  },
-  confirmButton: {
-    flex: 1,
-    marginRight: 10,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'black',
-    alignItems: 'center',
-  },
-  confirmButtonText: { color: 'black', fontSize: 16, fontWeight: 'bold' },
-  cancelButton: {
-    padding: 15,
-    alignItems: 'center',
-  },
-  tagCancelButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: 'red',
-    alignItems: 'center',
-  },
-  confirmPromptModal: {
-    flex: 1,
-  },
-  cancelButtonText: { color: 'white', fontSize: 16 },
   map: {
     flex: 1,
   },
@@ -315,8 +254,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listButton: {
-    top: 110,
-    right: 20,
+    top: 120,
+    left: 20,
   },
   cameraButton: {
     bottom: 30,
@@ -362,5 +301,9 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: 'white',
     fontSize: 16,
-  }
+  },
+  cancelButton: {
+    padding: 15,
+    alignItems: 'center',
+  },
 });
