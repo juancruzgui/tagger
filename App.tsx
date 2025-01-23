@@ -186,7 +186,6 @@ export default function App() {
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}
-        followsUserLocation={true}
         showsUserLocation={true}
         onPress={(event) => {
           if (showTagModal || showConfirmPrompt || showListModal || showFilterModal) {
